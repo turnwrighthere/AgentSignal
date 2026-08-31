@@ -1,0 +1,4 @@
+import { eq } from 'drizzle-orm'; import { getDb } from '@/db'; import { reports } from '@/db/schema';
+const statuses=['new','reviewing','resolved'] as const;
+export async function PATCH(request:Request,{params}:{params:Promise<{id:string}>}){let body:unknown;try{body=await request.json();}catch{return Response.json({error:'Invalid status.'},{status:400});}const status=(body as {status?:string}).status;if(!statuses.includes(status as typeof statuses[number]))return Response.json({error:'Invalid status.'},{status:400});const {id}=await params;await getDb().update(reports).set({status:status as typeof statuses[number]}).where(eq(reports.id,id));return Response.json({ok:true});}
+export async function DELETE(_:Request,{params}:{params:Promise<{id:string}>}){const {id}=await params;await getDb().delete(reports).where(eq(reports.id,id));return new Response(null,{status:204});}

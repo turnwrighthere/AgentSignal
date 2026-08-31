@@ -1,0 +1,20 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1788164833628,
+      "tag": "0000_great_namora",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1788164850985,
+      "tag": "0001_smiling_cardiac",
+      "breakpoints": true
+    }
+  ]
+}
