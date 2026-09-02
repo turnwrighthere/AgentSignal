@@ -1,0 +1,4 @@
+# `DOMAIN` is read from .env by Docker Compose.
+{$DOMAIN} {
+  reverse_proxy app:3000
+}
