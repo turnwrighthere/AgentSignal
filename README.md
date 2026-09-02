@@ -4,6 +4,8 @@ AgentSignal is a privacy-conscious WebMCP prototype for turning an AI-assisted v
 
 ## Managed demo
 
+Try the live hosted demo: [agentsignal-jaw06006.jaw06006.chatgpt.site](https://agentsignal-jaw06006.jaw06006.chatgpt.site/).
+
 The default project path is the existing ChatGPT Sites + D1 demo. Run `npm install`, then `npm run dev`. Generate D1 migrations after schema changes with `npm run db:generate`.
 
 ## Optional self-hosting
