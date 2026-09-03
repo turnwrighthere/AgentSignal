@@ -1,16 +1,951 @@
 'use client';
 import { useEffect, useMemo, useState } from 'react';
-type Issue='missing_information'|'unclear_information'|'incomplete_information'|'outdated_information'|'technical_problem'; type Impact='blocked'|'reduced_confidence'|'extra_effort'; type Status='new'|'reviewing'|'resolved'; type Report={id:string;issueType:Issue;generalizedNeed:string;pagePath:string;observation:string;impact:Impact;status:Status;createdDay:string;isSeeded:boolean}; type Draft=Omit<Report,'id'|'status'|'createdDay'|'isSeeded'>; type SelfHostConfig={enabled:boolean;configured:boolean;siteOrigin?:string;siteId?:string};
-const labels:Record<Issue,string>={missing_information:'Missing information',unclear_information:'Unclear information',incomplete_information:'Incomplete information',outdated_information:'Outdated information',technical_problem:'Technical problem'}; const impacts:Record<Impact,string>={blocked:'Blocked',reduced_confidence:'Reduced confidence',extra_effort:'Extra effort'};
-const seeds:Report[]=[{id:'example-1',issueType:'missing_information',generalizedNeed:'Determine whether the venue stage is wheelchair accessible',pagePath:'/venue/accessibility',observation:'The accessibility page covers entrances and restrooms, but not the stage.',impact:'blocked',status:'new',createdDay:'2026-08-31',isSeeded:true},{id:'example-2',issueType:'unclear_information',generalizedNeed:'Clarify whether outside catering is permitted',pagePath:'/venue',observation:'Catering options are listed but the outside-catering policy is not stated.',impact:'reduced_confidence',status:'reviewing',createdDay:'2026-08-30',isSeeded:true},{id:'example-3',issueType:'technical_problem',generalizedNeed:'Open the booking enquiry form',pagePath:'/venue/contact',observation:'The booking link returned an error while planning an event.',impact:'blocked',status:'new',createdDay:'2026-08-29',isSeeded:true},{id:'example-4',issueType:'incomplete_information',generalizedNeed:'Compare parking options for evening events',pagePath:'/venue',observation:'Parking is mentioned, but evening overflow availability is not explained.',impact:'extra_effort',status:'resolved',createdDay:'2026-08-28',isSeeded:true}];
-function Brand(){return <a className="brand" onClick={()=>location.hash='#home'}><i>A</i>AgentSignal</a>};
-function Drawer({draft,close,approve}:{draft:Draft;close:()=>void;approve:()=>void}){return <div className="shade"><section className="drawer" role="dialog" aria-modal="true" aria-labelledby="review"><button className="x" onClick={close}>×</button><b>Review before sending</b><h2 id="review">Is this the right report?</h2><p>This goes to the venue owner. It must describe their website, never you or your conversation.</p><dl><div><dt>Issue</dt><dd>{labels[draft.issueType]}</dd></div><div><dt>Need</dt><dd>{draft.generalizedNeed}</dd></div><div><dt>Page</dt><dd>{draft.pagePath}</dd></div><div><dt>What happened</dt><dd>{draft.observation}</dd></div><div><dt>Impact</dt><dd>{impacts[draft.impact]}</dd></div></dl><footer><button className="outline" onClick={close}>Cancel</button><button className="button" onClick={approve}>Approve & send</button></footer></section></div>}
-function Home({go}:{go:(s:string)=>void}){return <><section className="hero"><div><b>A better signal from AI-assisted visits</b><h1>Turn failed visits into clear website improvements.</h1><p>AgentSignal lets an AI agent surface what it could not find — after the visitor reviews the exact, privacy-conscious report.</p><div className="actions"><button className="button" onClick={()=>go('venue')}>Explore the live demo</button><button className="link" onClick={()=>go('learn')}>See the integration →</button></div></div><aside className="signal"><small>● NEW SIGNAL <em>EXAMPLE</em></small><h2>“Can guests use a wheelchair to reach the stage?”</h2><hr/><span>WHAT THE SITE NEEDS</span><strong>Stage accessibility details</strong><small>Visitor was blocked on /accessibility</small><hr/><p>Ready for a clear owner decision →</p></aside></section><section className="steps">{[['01','Agent finds a gap','Only missing, unclear, incomplete, outdated, or broken content qualifies.'],['02','Visitor approves it','The exact generalized report is reviewed before it can leave the page.'],['03','Owner sees what matters','A calm dashboard turns individual signals into a practical improvement queue.']].map(x=><article key={x[0]}><b>{x[0]}</b><h2>{x[1]}</h2><p>{x[2]}</p></article>)}</section><section className="promise"><b>Designed to minimize data</b><h2>No prompts. No profiles. No visitor tracking.</h2><p>Only a short, same-site description of what the website could improve. Reports are screened locally and again on the server.</p><button className="link" onClick={()=>go('privacy')}>Read the privacy commitment →</button></section></>}
-function Venue({report}:{report:()=>void}){return <><section className="venueHero"><header><strong>The Aster Hall</strong><span>Events · Gatherings · Celebrations</span></header><div><small>CHICAGO’S WEST LOOP</small><h1>Room for the occasion.</h1><p>Historic warmth, flexible rooms, and a gracious team for evenings worth remembering.</p><a href="#spaces">Explore our spaces ↓</a></div></section><section className="venueIntro" id="spaces"><b>A place to gather</b><h2>For the plans that deserve a beautiful room.</h2><div className="rooms">{[['hall','The Assembly Room','Up to 220 guests · Original brick · Dedicated bar'],['garden','The Garden Gallery','Up to 90 guests · Daylight · Courtyard access'],['library','The Library','Up to 42 guests · Intimate dinners · Fireside lounge']].map(x=><article key={x[1]}><i className={x[0]}/><h3>{x[1]}</h3><p>{x[2]}</p></article>)}</div></section><section className="details"><div><b>Good to know</b><h2>Thoughtful details, already handled.</h2></div><div>{[['Accessibility','Step-free arrival, accessible restrooms, and elevator access to all guest floors.'],['Catering','Seasonal menus, bar service, and a dedicated events coordinator for every booking.'],['Parking','Valet on Friday and Saturday evenings, plus nearby public garages.']].map(x=><p key={x[0]}><strong>{x[0]}</strong>{x[1]}</p>)}</div></section><section className="venueCTA"><p>Planning something special?</p><h2>Let’s make room for it.</h2><button className="outline" onClick={()=>alert('Demo booking link unavailable — this is the intentional technical issue.')}>Start an enquiry</button></section><aside className="toast"><span>●</span><div><strong>AgentSignal is active on this demo</strong><p>An AI agent can report a website issue for your approval.</p></div><button className="link" onClick={report}>Preview a report →</button></aside></>}
-function Dashboard({reports,setReports,selfHost}:{reports:Report[];setReports:React.Dispatch<React.SetStateAction<Report[]>>;selfHost?:SelfHostConfig}){const [issue,setIssue]=useState('all'),[status,setStatus]=useState('all');const shown=reports.filter(r=>(issue==='all'||r.issueType===issue)&&(status==='all'||r.status===status));const edit=async(id:string,next:Status)=>{const response=await fetch(`/api/reports/${id}`,{method:'PATCH',headers:{'content-type':'application/json'},body:JSON.stringify({status:next})});if(response.ok)setReports(v=>v.map(r=>r.id===id?{...r,status:next}:r));};const remove=async(id:string)=>{const response=await fetch(`/api/reports/${id}`,{method:'DELETE'});if(response.ok)setReports(v=>v.filter(r=>r.id!==id));};return <section className="dashboard"><header><div><b>Owner dashboard</b><h1>What visitors need from your site.</h1><p>Signals from AI-assisted visits, made useful for your next content decision.</p></div><em>{selfHost?.enabled?'Private installation':'Demo mode'}</em></header><div className="metrics"><article><span>New signals</span><strong>{reports.filter(r=>r.status==='new').length}</strong><small>Need a first look</small></article><article><span>Visitors blocked</span><strong>{reports.filter(r=>r.impact==='blocked').length}</strong><small>High-friction issues</small></article><article><span>Pages affected</span><strong>{new Set(reports.map(r=>r.pagePath)).size}</strong><small>Places to improve</small></article></div><main><section><div className="reportHead"><div><h2>Recent signals</h2><p>Each report is short, generalized, and safe to act on.</p></div><div><select value={issue} onChange={e=>setIssue(e.target.value)}><option value="all">All issues</option>{Object.entries(labels).map(([k,v])=><option key={k} value={k}>{v}</option>)}</select><select value={status} onChange={e=>setStatus(e.target.value)}><option value="all">All statuses</option><option value="new">New</option><option value="reviewing">Reviewing</option><option value="resolved">Resolved</option></select></div></div>{shown.map(r=><article className="report" key={r.id}><small>{labels[r.issueType]} {r.isSeeded&&' · EXAMPLE'}</small><h3>{r.generalizedNeed}</h3><p>{r.observation}</p><footer><span>{r.pagePath} · <b>{impacts[r.impact]}</b></span><div><select value={r.status} onChange={e=>edit(r.id,e.target.value as Status)}><option value="new">New</option><option value="reviewing">Reviewing</option><option value="resolved">Resolved</option></select><button className="delete" onClick={()=>remove(r.id)}>Delete</button></div></footer></article>)}</section><aside className="insights"><h2>Where attention is building</h2><p>Accessibility <i><b style={{width:'78%'}}/></i> 3</p><p>Booking <i><b style={{width:'52%'}}/></i> 2</p><p>Catering <i><b style={{width:'30%'}}/></i> 1</p><hr/><strong>Most affected page</strong><p>/venue/accessibility</p><small>Start by making stage access clear. It is blocking the highest-intent visitor in this demo.</small>{selfHost?.enabled&&<><hr/><strong>Install on your website</strong><pre className="embed-code">{`<script src="${location.origin}/agentsignal.js"></script>\n<script>AgentSignal.init({ apiOrigin: '${location.origin}', siteId: '${selfHost.siteId}' });</script>`}</pre></>}</aside></main></section>}
-function Learn({go}:{go:(s:string)=>void}){return <section className="learn"><b>A small integration, a useful signal</b><h1>Make your website easier for AI-assisted visitors to use.</h1><p>AgentSignal registers one deliberate WebMCP tool. It never sends a report until a visitor reviews and approves it.</p><pre><span>Install it on any page</span>{'<script src="https://your-site.com/agentsignal.js"></script>'}</pre><div className="learnCards"><article><h2>The tool</h2><code>agentsignal_report_site_issue</code><p>For missing, unclear, incomplete, outdated, or technically inaccessible website information.</p></article><article><h2>What it accepts</h2><p>Issue type, generalized need, same-site page path, observation, and impact — nothing else.</p></article><article><h2>What it refuses</h2><p>Names, prompts, transcripts, account details, cross-site context, and personal circumstances.</p></article></div><section className="selfhost-note"><b>Prefer to run it yourself?</b><h2>Self-host AgentSignal on your own infrastructure.</h2><p>The managed demo is the quickest way to try it. Organizations that need a private dashboard can use the optional Docker deployment instead.</p></section><button className="button" onClick={()=>go('venue')}>See it in the venue demo</button></section>}
-function Privacy(){return <section className="privacy"><b>Privacy commitment</b><h1>Useful feedback should not require visitor surveillance.</h1><p>AgentSignal is designed to accept only a generalized description of a website problem. It does not request or store visitor identity, prompts, transcripts, cookies, IP addresses, referrers, or profiles.</p><p>Before a report can be approved, common personal-information patterns are blocked. The same checks run again on the server. Query strings and fragments are removed, and reports are displayed as plain text.</p><p>Short free-text systems cannot promise perfect anonymity in every context. That is why AgentSignal combines a narrow schema, explicit instructions, privacy screening, exact visitor review, and server rejection.</p></section>}
-function DeliverySetup(){const [saved,setSaved]=useState(false);return <section className="delivery"><div><b>Choose how you receive feedback</b><h2>Start in the dashboard.</h2><p>Daily email digests are coming soon. Until then, every approved report is available here whenever your team needs it.</p></div><div className="delivery-panel"><div className="mode-list"><button className="selected" onClick={()=>setSaved(false)}><span className="radio"/><strong>Dashboard only</strong><small>Review signals online whenever it suits your team.</small></button><button disabled className="coming"><span className="radio"/><strong>Email digest only <em>Coming soon</em></strong><small>One verified inbox will receive a concise daily summary.</small></button><button disabled className="coming"><span className="radio"/><strong>Email + dashboard <em>Coming soon</em></strong><small>Receive a daily nudge and use the dashboard for detail.</small></button></div><p className="delivery-note">Email enrollment is not open yet, so AgentSignal will not collect an email address or send messages.</p><div className="delivery-save"><button className="button" onClick={()=>setSaved(true)}>Use dashboard only</button>{saved&&<span>Dashboard-only delivery saved for this demo.</span>}</div></div></section>}
-function SelfHostAccess({configured,done}:{configured:boolean;done:()=>void}){const [username,setUsername]=useState(''),[password,setPassword]=useState(''),[setupToken,setSetupToken]=useState(''),[error,setError]=useState('');const submit=async(e:React.SyntheticEvent<HTMLFormElement>)=>{e.preventDefault();setError('');const endpoint=configured?'/api/selfhost/login':'/api/selfhost/setup';const body=configured?{username,password}:{username,password,setupToken};const response=await fetch(endpoint,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)});if(!response.ok){const result=await response.json().catch(()=>({})) as {error?:string};setError(result.error||'Please check those details and try again.');return;}if(configured)done();else location.reload();};return <main className="privacy"><b>Private AgentSignal</b><h1>{configured?'Sign in to your dashboard':'Set up your private dashboard'}</h1><p>{configured?'Use the owner account created during setup.':'This one-time step creates the only owner account for this installation.'}</p><form className="selfhost-form" onSubmit={submit}><label>Username<input value={username} onChange={e=>setUsername(e.target.value)} autoComplete="username" required/></label><label>Password<input type="password" value={password} onChange={e=>setPassword(e.target.value)} autoComplete={configured?'current-password':'new-password'} minLength={12} required/></label>{!configured&&<label>Setup token<input type="password" value={setupToken} onChange={e=>setSetupToken(e.target.value)} required/></label>}{error&&<p role="alert">{error}</p>}<button className="button" type="submit">{configured?'Sign in':'Create owner account'}</button></form></main>}
-const agentSignalSchema={type:'object',additionalProperties:false,required:['issueType','generalizedNeed','pagePath','observation','impact'],properties:{issueType:{type:'string',enum:['missing_information','unclear_information','incomplete_information','outdated_information','technical_problem']},generalizedNeed:{type:'string',maxLength:140},pagePath:{type:'string',pattern:'^/[^?#]*$'},observation:{type:'string',maxLength:240},impact:{type:'string',enum:['blocked','reduced_confidence','extra_effort']}}};
-export default function App(){const [view,setView]=useState('home'),[reports,setReports]=useState(seeds),[draft,setDraft]=useState<Draft|null>(null),[selfHost,setSelfHost]=useState<SelfHostConfig|null>(null),[signedIn,setSignedIn]=useState(false);useEffect(()=>{void fetch('/api/selfhost/config').then(r=>r.json()).then((data:unknown)=>{if(data&&typeof data==='object'&&'enabled'in data&&'configured'in data)setSelfHost(data as SelfHostConfig);}).catch(()=>setSelfHost({enabled:false,configured:false}));},[]);useEffect(()=>{if(selfHost?.enabled&&signedIn)void fetch('/api/reports').then(r=>r.ok?r.json():null).then((data:unknown)=>{if(data&&typeof data==='object'&&'reports'in data&&Array.isArray(data.reports))setReports(data.reports as Report[]);});},[selfHost,signedIn]);useEffect(()=>{const ctx=(document as Document&{modelContext?:{registerTool?:(v:unknown)=>void}}).modelContext;ctx?.registerTool?.({name:'agentsignal_report_site_issue',description:'Prepare a generalized same-site website issue only. Never include names, contact details, account information, original prompts, conversation text, or cross-site context. The visitor reviews the exact report before any submission.',inputSchema:agentSignalSchema,execute:async(x:unknown)=>{if(!x||typeof x!=='object')throw new Error('A structured report is required.');const report={...x as Draft,pagePath:String((x as Draft).pagePath||'')};if(!/^\/[^?#]*$/.test(report.pagePath))throw new Error('The page path must be a same-site path.');setDraft(report);return {state:'pending_user_review',message:'The exact report is now visible for the visitor to approve or cancel.'};}})},[]);const content=useMemo(()=>view==='venue'?<Venue report={()=>setDraft({issueType:'missing_information',generalizedNeed:'Determine whether the venue stage is wheelchair accessible',pagePath:'/venue/accessibility',observation:'The page describes accessible entrances and restrooms but not stage access.',impact:'blocked'})}/>:view==='dashboard'?<Dashboard reports={reports} setReports={setReports} selfHost={selfHost??undefined}/>:view==='learn'?<Learn go={setView}/>:view==='privacy'?<Privacy/>:<Home go={setView}/>,[view,reports,selfHost]);const approve=async()=>{if(!draft)return;const live={...draft,id:`live-${Date.now()}`,status:'new' as Status,createdDay:new Date().toISOString().slice(0,10),isSeeded:false};try{const response=await fetch('/api/reports',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(draft)});if(response.ok){const saved=await response.json() as Report;setReports(v=>[saved,...v]);}else if(!selfHost?.enabled)setReports(v=>[live,...v]);}catch{if(!selfHost?.enabled)setReports(v=>[live,...v]);}setDraft(null);setView('dashboard')};if(selfHost?.enabled&&!signedIn)return <SelfHostAccess configured={selfHost.configured} done={()=>setSignedIn(true)}/>;return <><header className="siteNav"><Brand/><nav>{[['home','Overview'],['venue','Demo venue'],['dashboard','Dashboard'],['learn','How it works']].map(x=><button key={x[0]} className={view===x[0]?'on':''} onClick={()=>setView(x[0])}>{x[1]}</button>)}</nav><button className="link" onClick={()=>setView('dashboard')}>View {selfHost?.enabled?'dashboard':'demo dashboard'} →</button></header><main>{content}<DeliverySetup/></main><footer className="siteFooter"><Brand/><span>Privacy-first signals for better websites.</span><button className="link" onClick={()=>setView('privacy')}>Privacy</button></footer>{draft&&<Drawer draft={draft} close={()=>setDraft(null)} approve={approve}/>}</>}
+type Issue =
+  | 'missing_information'
+  | 'unclear_information'
+  | 'incomplete_information'
+  | 'outdated_information'
+  | 'technical_problem';
+type Impact = 'blocked' | 'reduced_confidence' | 'extra_effort';
+type Status = 'new' | 'reviewing' | 'resolved';
+type Report = {
+  id: string;
+  issueType: Issue;
+  generalizedNeed: string;
+  pagePath: string;
+  observation: string;
+  impact: Impact;
+  status: Status;
+  createdDay: string;
+  isSeeded: boolean;
+};
+type Draft = Omit<Report, 'id' | 'status' | 'createdDay' | 'isSeeded'>;
+type SelfHostConfig = {
+  enabled: boolean;
+  configured: boolean;
+  siteOrigin?: string;
+  siteId?: string;
+};
+const labels: Record<Issue, string> = {
+  missing_information: 'Missing information',
+  unclear_information: 'Unclear information',
+  incomplete_information: 'Incomplete information',
+  outdated_information: 'Outdated information',
+  technical_problem: 'Technical problem',
+};
+const impacts: Record<Impact, string> = {
+  blocked: 'Blocked',
+  reduced_confidence: 'Reduced confidence',
+  extra_effort: 'Extra effort',
+};
+const seeds: Report[] = [
+  {
+    id: 'example-1',
+    issueType: 'missing_information',
+    generalizedNeed:
+      'Determine whether the venue stage is wheelchair accessible',
+    pagePath: '/venue/accessibility',
+    observation:
+      'The accessibility page covers entrances and restrooms, but not the stage.',
+    impact: 'blocked',
+    status: 'new',
+    createdDay: '2026-08-31',
+    isSeeded: true,
+  },
+  {
+    id: 'example-2',
+    issueType: 'unclear_information',
+    generalizedNeed: 'Clarify whether outside catering is permitted',
+    pagePath: '/venue',
+    observation:
+      'Catering options are listed but the outside-catering policy is not stated.',
+    impact: 'reduced_confidence',
+    status: 'reviewing',
+    createdDay: '2026-08-30',
+    isSeeded: true,
+  },
+  {
+    id: 'example-3',
+    issueType: 'technical_problem',
+    generalizedNeed: 'Open the booking enquiry form',
+    pagePath: '/venue/contact',
+    observation: 'The booking link returned an error while planning an event.',
+    impact: 'blocked',
+    status: 'new',
+    createdDay: '2026-08-29',
+    isSeeded: true,
+  },
+  {
+    id: 'example-4',
+    issueType: 'incomplete_information',
+    generalizedNeed: 'Compare parking options for evening events',
+    pagePath: '/venue',
+    observation:
+      'Parking is mentioned, but evening overflow availability is not explained.',
+    impact: 'extra_effort',
+    status: 'resolved',
+    createdDay: '2026-08-28',
+    isSeeded: true,
+  },
+];
+function Brand() {
+  return (
+    <a className="brand" onClick={() => (location.hash = '#home')}>
+      <i>A</i>AgentSignal
+    </a>
+  );
+}
+function Drawer({
+  draft,
+  close,
+  approve,
+}: {
+  draft: Draft;
+  close: () => void;
+  approve: (draft: Draft) => void;
+}) {
+  const [edited, setEdited] = useState<Draft>(draft);
+  const update = <K extends keyof Draft>(key: K, value: Draft[K]) =>
+    setEdited((current) => ({ ...current, [key]: value }));
+  return (
+    <div className="shade">
+      <section
+        className="drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="review"
+      >
+        <button className="x" onClick={close} aria-label="Close review">
+          ×
+        </button>
+        <b>Review before sending</b>
+        <h2 id="review">Make this report yours.</h2>
+        <p>
+          You can correct the agent’s draft before it goes to the venue owner.
+          Keep it about the website, never you or your conversation.
+        </p>
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            approve(edited);
+          }}
+        >
+          <div className="report-fields">
+            <label>
+              Issue
+              <select
+                value={edited.issueType}
+                onChange={(event) =>
+                  update('issueType', event.target.value as Issue)
+                }
+              >
+                {Object.entries(labels).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              What the site needs
+              <input
+                value={edited.generalizedNeed}
+                maxLength={140}
+                onChange={(event) =>
+                  update('generalizedNeed', event.target.value)
+                }
+                required
+              />
+              <small>{edited.generalizedNeed.length}/140</small>
+            </label>
+            <label>
+              Page path
+              <input
+                value={edited.pagePath}
+                pattern="/[^?#]*"
+                onChange={(event) => update('pagePath', event.target.value)}
+                required
+              />
+            </label>
+            <label>
+              What happened
+              <textarea
+                value={edited.observation}
+                maxLength={240}
+                onChange={(event) => update('observation', event.target.value)}
+                required
+              />
+              <small>{edited.observation.length}/240</small>
+            </label>
+            <label>
+              Impact
+              <select
+                value={edited.impact}
+                onChange={(event) =>
+                  update('impact', event.target.value as Impact)
+                }
+              >
+                {Object.entries(impacts).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <footer>
+            <button className="outline" type="button" onClick={close}>
+              Cancel
+            </button>
+            <button className="button" type="submit">
+              Approve & send
+            </button>
+          </footer>
+        </form>
+      </section>
+    </div>
+  );
+}
+function Home({ go }: { go: (s: string) => void }) {
+  return (
+    <>
+      <section className="hero">
+        <div>
+          <b>A better signal from AI-assisted visits</b>
+          <h1>Turn failed visits into clear website improvements.</h1>
+          <p>
+            AgentSignal lets an AI agent surface what it could not find — after
+            the visitor reviews the exact, privacy-conscious report.
+          </p>
+          <div className="actions">
+            <button className="button" onClick={() => go('venue')}>
+              Explore the live demo
+            </button>
+            <button className="link" onClick={() => go('learn')}>
+              See the integration →
+            </button>
+          </div>
+        </div>
+        <aside className="signal">
+          <small>
+            ● NEW SIGNAL <em>EXAMPLE</em>
+          </small>
+          <h2>“Can guests use a wheelchair to reach the stage?”</h2>
+          <hr />
+          <span>WHAT THE SITE NEEDS</span>
+          <strong>Stage accessibility details</strong>
+          <small>Visitor was blocked on /accessibility</small>
+          <hr />
+          <p>Ready for a clear owner decision →</p>
+        </aside>
+      </section>
+      <section className="steps">
+        {[
+          [
+            '01',
+            'Agent finds a gap',
+            'Only missing, unclear, incomplete, outdated, or broken content qualifies.',
+          ],
+          [
+            '02',
+            'Visitor controls it',
+            'The exact generalized report can be reviewed and edited before it leaves the page.',
+          ],
+          [
+            '03',
+            'Owner sees what matters',
+            'A calm dashboard turns individual signals into a practical improvement queue.',
+          ],
+        ].map((x) => (
+          <article key={x[0]}>
+            <b>{x[0]}</b>
+            <h2>{x[1]}</h2>
+            <p>{x[2]}</p>
+          </article>
+        ))}
+      </section>
+      <section className="promise">
+        <b>Designed to minimize data</b>
+        <h2>No prompts. No profiles. No visitor tracking.</h2>
+        <p>
+          Only a short, same-site description of what the website could improve.
+          Reports are screened locally and again on the server.
+        </p>
+        <button className="link" onClick={() => go('privacy')}>
+          Read the privacy commitment →
+        </button>
+      </section>
+    </>
+  );
+}
+function Venue({ report }: { report: () => void }) {
+  return (
+    <>
+      <section className="venueHero">
+        <header>
+          <strong>The Aster Hall</strong>
+          <span>Events · Gatherings · Celebrations</span>
+        </header>
+        <div>
+          <small>CHICAGO’S WEST LOOP</small>
+          <h1>Room for the occasion.</h1>
+          <p>
+            Historic warmth, flexible rooms, and a gracious team for evenings
+            worth remembering.
+          </p>
+          <a href="#spaces">Explore our spaces ↓</a>
+        </div>
+      </section>
+      <section className="venueIntro" id="spaces">
+        <b>A place to gather</b>
+        <h2>For the plans that deserve a beautiful room.</h2>
+        <div className="rooms">
+          {[
+            [
+              'hall',
+              'The Assembly Room',
+              'Up to 220 guests · Original brick · Dedicated bar',
+            ],
+            [
+              'garden',
+              'The Garden Gallery',
+              'Up to 90 guests · Daylight · Courtyard access',
+            ],
+            [
+              'library',
+              'The Library',
+              'Up to 42 guests · Intimate dinners · Fireside lounge',
+            ],
+          ].map((x) => (
+            <article key={x[1]}>
+              <i className={x[0]} />
+              <h3>{x[1]}</h3>
+              <p>{x[2]}</p>
+            </article>
+          ))}
+        </div>
+      </section>
+      <section className="details">
+        <div>
+          <b>Good to know</b>
+          <h2>Thoughtful details, already handled.</h2>
+        </div>
+        <div>
+          {[
+            [
+              'Accessibility',
+              'Step-free arrival, accessible restrooms, and elevator access to all guest floors.',
+            ],
+            [
+              'Catering',
+              'Seasonal menus, bar service, and a dedicated events coordinator for every booking.',
+            ],
+            [
+              'Parking',
+              'Valet on Friday and Saturday evenings, plus nearby public garages.',
+            ],
+          ].map((x) => (
+            <p key={x[0]}>
+              <strong>{x[0]}</strong>
+              {x[1]}
+            </p>
+          ))}
+        </div>
+      </section>
+      <section className="venueCTA">
+        <p>Planning something special?</p>
+        <h2>Let’s make room for it.</h2>
+        <button
+          className="outline"
+          onClick={() =>
+            alert(
+              'Demo booking link unavailable — this is the intentional technical issue.',
+            )
+          }
+        >
+          Start an enquiry
+        </button>
+      </section>
+      <aside className="toast">
+        <span>●</span>
+        <div>
+          <strong>AgentSignal is active on this demo</strong>
+          <p>An AI agent can report a website issue for your approval.</p>
+        </div>
+        <button className="link" onClick={report}>
+          Preview a report →
+        </button>
+      </aside>
+    </>
+  );
+}
+function Dashboard({
+  reports,
+  setReports,
+  selfHost,
+}: {
+  reports: Report[];
+  setReports: React.Dispatch<React.SetStateAction<Report[]>>;
+  selfHost?: SelfHostConfig;
+}) {
+  const [issue, setIssue] = useState('all'),
+    [status, setStatus] = useState('all');
+  const shown = reports.filter(
+    (r) =>
+      (issue === 'all' || r.issueType === issue) &&
+      (status === 'all' || r.status === status),
+  );
+  const edit = async (id: string, next: Status) => {
+    const response = await fetch(`/api/reports/${id}`, {
+      method: 'PATCH',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ status: next }),
+    });
+    if (response.ok)
+      setReports((v) =>
+        v.map((r) => (r.id === id ? { ...r, status: next } : r)),
+      );
+  };
+  const remove = async (id: string) => {
+    const response = await fetch(`/api/reports/${id}`, { method: 'DELETE' });
+    if (response.ok) setReports((v) => v.filter((r) => r.id !== id));
+  };
+  return (
+    <section className="dashboard">
+      <header>
+        <div>
+          <b>Owner dashboard</b>
+          <h1>What visitors need from your site.</h1>
+          <p>
+            Signals from AI-assisted visits, made useful for your next content
+            decision.
+          </p>
+        </div>
+        <em>{selfHost?.enabled ? 'Private installation' : 'Demo mode'}</em>
+      </header>
+      <div className="metrics">
+        <article>
+          <span>New signals</span>
+          <strong>{reports.filter((r) => r.status === 'new').length}</strong>
+          <small>Need a first look</small>
+        </article>
+        <article>
+          <span>Visitors blocked</span>
+          <strong>
+            {reports.filter((r) => r.impact === 'blocked').length}
+          </strong>
+          <small>High-friction issues</small>
+        </article>
+        <article>
+          <span>Pages affected</span>
+          <strong>{new Set(reports.map((r) => r.pagePath)).size}</strong>
+          <small>Places to improve</small>
+        </article>
+      </div>
+      <main>
+        <section>
+          <div className="reportHead">
+            <div>
+              <h2>Recent signals</h2>
+              <p>Each report is short, generalized, and safe to act on.</p>
+            </div>
+            <div>
+              <select value={issue} onChange={(e) => setIssue(e.target.value)}>
+                <option value="all">All issues</option>
+                {Object.entries(labels).map(([k, v]) => (
+                  <option key={k} value={k}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+              >
+                <option value="all">All statuses</option>
+                <option value="new">New</option>
+                <option value="reviewing">Reviewing</option>
+                <option value="resolved">Resolved</option>
+              </select>
+            </div>
+          </div>
+          {shown.map((r) => (
+            <article className="report" key={r.id}>
+              <small>
+                {labels[r.issueType]} {r.isSeeded && ' · EXAMPLE'}
+              </small>
+              <h3>{r.generalizedNeed}</h3>
+              <p>{r.observation}</p>
+              <footer>
+                <span>
+                  {r.pagePath} · <b>{impacts[r.impact]}</b>
+                </span>
+                <div>
+                  <select
+                    value={r.status}
+                    onChange={(e) => edit(r.id, e.target.value as Status)}
+                  >
+                    <option value="new">New</option>
+                    <option value="reviewing">Reviewing</option>
+                    <option value="resolved">Resolved</option>
+                  </select>
+                  <button className="delete" onClick={() => remove(r.id)}>
+                    Delete
+                  </button>
+                </div>
+              </footer>
+            </article>
+          ))}
+        </section>
+        <aside className="insights">
+          <h2>Where attention is building</h2>
+          <p>
+            Accessibility{' '}
+            <i>
+              <b style={{ width: '78%' }} />
+            </i>{' '}
+            3
+          </p>
+          <p>
+            Booking{' '}
+            <i>
+              <b style={{ width: '52%' }} />
+            </i>{' '}
+            2
+          </p>
+          <p>
+            Catering{' '}
+            <i>
+              <b style={{ width: '30%' }} />
+            </i>{' '}
+            1
+          </p>
+          <hr />
+          <strong>Most affected page</strong>
+          <p>/venue/accessibility</p>
+          <small>
+            Start by making stage access clear. It is blocking the
+            highest-intent visitor in this demo.
+          </small>
+          {selfHost?.enabled && (
+            <>
+              <hr />
+              <strong>Install on your website</strong>
+              <pre className="embed-code">{`<script src="${location.origin}/agentsignal.js"></script>\n<script>AgentSignal.init({ apiOrigin: '${location.origin}', siteId: '${selfHost.siteId}' });</script>`}</pre>
+            </>
+          )}
+        </aside>
+      </main>
+    </section>
+  );
+}
+function Learn({ go }: { go: (s: string) => void }) {
+  return (
+    <section className="learn">
+      <b>A small integration, a useful signal</b>
+      <h1>Make your website easier for AI-assisted visitors to use.</h1>
+      <p>
+        AgentSignal registers one deliberate WebMCP tool. It never sends a
+        report until a visitor reviews, edits if needed, and approves it.
+      </p>
+      <pre>
+        <span>Install it on any page</span>
+        {'<script src="https://your-site.com/agentsignal.js"></script>'}
+      </pre>
+      <div className="learnCards">
+        <article>
+          <h2>The tool</h2>
+          <code>agentsignal_report_site_issue</code>
+          <p>
+            For missing, unclear, incomplete, outdated, or technically
+            inaccessible website information.
+          </p>
+        </article>
+        <article>
+          <h2>What it accepts</h2>
+          <p>
+            Issue type, generalized need, same-site page path, observation, and
+            impact — nothing else.
+          </p>
+        </article>
+        <article>
+          <h2>What it refuses</h2>
+          <p>
+            Names, prompts, transcripts, account details, cross-site context,
+            and personal circumstances.
+          </p>
+        </article>
+      </div>
+      <section className="selfhost-note">
+        <b>Prefer to run it yourself?</b>
+        <h2>Self-host AgentSignal on your own infrastructure.</h2>
+        <p>
+          The managed demo is the quickest way to try it. Organizations that
+          need a private dashboard can use the optional Docker deployment
+          instead.
+        </p>
+      </section>
+      <button className="button" onClick={() => go('venue')}>
+        See it in the venue demo
+      </button>
+    </section>
+  );
+}
+function Privacy() {
+  return (
+    <section className="privacy">
+      <b>Privacy commitment</b>
+      <h1>Useful feedback should not require visitor surveillance.</h1>
+      <p>
+        AgentSignal is designed to accept only a generalized description of a
+        website problem. It does not request or store visitor identity, prompts,
+        transcripts, cookies, IP addresses, referrers, or profiles.
+      </p>
+      <p>
+        Before a report can be approved, common personal-information patterns
+        are blocked. The same checks run again on the server. Query strings and
+        fragments are removed, and reports are displayed as plain text.
+      </p>
+      <p>
+        Short free-text systems cannot promise perfect anonymity in every
+        context. That is why AgentSignal combines a narrow schema, explicit
+        instructions, privacy screening, exact visitor review, and server
+        rejection.
+      </p>
+    </section>
+  );
+}
+function DeliverySetup() {
+  const [saved, setSaved] = useState(false);
+  return (
+    <section className="delivery">
+      <div>
+        <b>Choose how you receive feedback</b>
+        <h2>Start in the dashboard.</h2>
+        <p>
+          Daily email digests are coming soon. Until then, every approved report
+          is available here whenever your team needs it.
+        </p>
+      </div>
+      <div className="delivery-panel">
+        <div className="mode-list">
+          <button className="selected" onClick={() => setSaved(false)}>
+            <span className="radio" />
+            <strong>Dashboard only</strong>
+            <small>Review signals online whenever it suits your team.</small>
+          </button>
+          <button disabled className="coming">
+            <span className="radio" />
+            <strong>
+              Email digest only <em>Coming soon</em>
+            </strong>
+            <small>
+              One verified inbox will receive a concise daily summary.
+            </small>
+          </button>
+          <button disabled className="coming">
+            <span className="radio" />
+            <strong>
+              Email + dashboard <em>Coming soon</em>
+            </strong>
+            <small>
+              Receive a daily nudge and use the dashboard for detail.
+            </small>
+          </button>
+        </div>
+        <p className="delivery-note">
+          Email enrollment is not open yet, so AgentSignal will not collect an
+          email address or send messages.
+        </p>
+        <div className="delivery-save">
+          <button className="button" onClick={() => setSaved(true)}>
+            Use dashboard only
+          </button>
+          {saved && <span>Dashboard-only delivery saved for this demo.</span>}
+        </div>
+      </div>
+    </section>
+  );
+}
+function SelfHostAccess({
+  configured,
+  done,
+}: {
+  configured: boolean;
+  done: () => void;
+}) {
+  const [username, setUsername] = useState(''),
+    [password, setPassword] = useState(''),
+    [setupToken, setSetupToken] = useState(''),
+    [error, setError] = useState('');
+  const submit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError('');
+    const endpoint = configured ? '/api/selfhost/login' : '/api/selfhost/setup';
+    const body = configured
+      ? { username, password }
+      : { username, password, setupToken };
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!response.ok) {
+      const result = (await response.json().catch(() => ({}))) as {
+        error?: string;
+      };
+      setError(result.error || 'Please check those details and try again.');
+      return;
+    }
+    if (configured) done();
+    else location.reload();
+  };
+  return (
+    <main className="privacy">
+      <b>Private AgentSignal</b>
+      <h1>
+        {configured
+          ? 'Sign in to your dashboard'
+          : 'Set up your private dashboard'}
+      </h1>
+      <p>
+        {configured
+          ? 'Use the owner account created during setup.'
+          : 'This one-time step creates the only owner account for this installation.'}
+      </p>
+      <form className="selfhost-form" onSubmit={submit}>
+        <label>
+          Username
+          <input
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            autoComplete="username"
+            required
+          />
+        </label>
+        <label>
+          Password
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete={configured ? 'current-password' : 'new-password'}
+            minLength={12}
+            required
+          />
+        </label>
+        {!configured && (
+          <label>
+            Setup token
+            <input
+              type="password"
+              value={setupToken}
+              onChange={(e) => setSetupToken(e.target.value)}
+              required
+            />
+          </label>
+        )}
+        {error && <p role="alert">{error}</p>}
+        <button className="button" type="submit">
+          {configured ? 'Sign in' : 'Create owner account'}
+        </button>
+      </form>
+    </main>
+  );
+}
+const agentSignalSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: [
+    'issueType',
+    'generalizedNeed',
+    'pagePath',
+    'observation',
+    'impact',
+  ],
+  properties: {
+    issueType: {
+      type: 'string',
+      enum: [
+        'missing_information',
+        'unclear_information',
+        'incomplete_information',
+        'outdated_information',
+        'technical_problem',
+      ],
+    },
+    generalizedNeed: { type: 'string', maxLength: 140 },
+    pagePath: { type: 'string', pattern: '^/[^?#]*$' },
+    observation: { type: 'string', maxLength: 240 },
+    impact: {
+      type: 'string',
+      enum: ['blocked', 'reduced_confidence', 'extra_effort'],
+    },
+  },
+};
+export default function App() {
+  const [view, setView] = useState('home'),
+    [reports, setReports] = useState(seeds),
+    [draft, setDraft] = useState<Draft | null>(null),
+    [selfHost, setSelfHost] = useState<SelfHostConfig | null>(null),
+    [signedIn, setSignedIn] = useState(false);
+  useEffect(() => {
+    void fetch('/api/selfhost/config')
+      .then((r) => r.json())
+      .then((data: unknown) => {
+        if (
+          data &&
+          typeof data === 'object' &&
+          'enabled' in data &&
+          'configured' in data
+        )
+          setSelfHost(data as SelfHostConfig);
+      })
+      .catch(() => setSelfHost({ enabled: false, configured: false }));
+  }, []);
+  useEffect(() => {
+    if (selfHost?.enabled && signedIn)
+      void fetch('/api/reports')
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data: unknown) => {
+          if (
+            data &&
+            typeof data === 'object' &&
+            'reports' in data &&
+            Array.isArray(data.reports)
+          )
+            setReports(data.reports as Report[]);
+        });
+  }, [selfHost, signedIn]);
+  useEffect(() => {
+    const ctx = (
+      document as Document & {
+        modelContext?: { registerTool?: (v: unknown) => void };
+      }
+    ).modelContext;
+    ctx?.registerTool?.({
+      name: 'agentsignal_report_site_issue',
+      description:
+        'Prepare a generalized same-site website issue only. Never include names, contact details, account information, original prompts, conversation text, or cross-site context. The visitor can edit the exact report before approving any submission.',
+      inputSchema: agentSignalSchema,
+      execute: async (x: unknown) => {
+        if (!x || typeof x !== 'object')
+          throw new Error('A structured report is required.');
+        const report = {
+          ...(x as Draft),
+          pagePath: String((x as Draft).pagePath || ''),
+        };
+        if (!/^\/[^?#]*$/.test(report.pagePath))
+          throw new Error('The page path must be a same-site path.');
+        setDraft(report);
+        return {
+          state: 'pending_user_review',
+          message:
+            'The exact report is visible for the visitor to edit, approve, or cancel.',
+        };
+      },
+    });
+  }, []);
+  const content = useMemo(
+    () =>
+      view === 'venue' ? (
+        <Venue
+          report={() =>
+            setDraft({
+              issueType: 'missing_information',
+              generalizedNeed:
+                'Determine whether the venue stage is wheelchair accessible',
+              pagePath: '/venue/accessibility',
+              observation:
+                'The page describes accessible entrances and restrooms but not stage access.',
+              impact: 'blocked',
+            })
+          }
+        />
+      ) : view === 'dashboard' ? (
+        <Dashboard
+          reports={reports}
+          setReports={setReports}
+          selfHost={selfHost ?? undefined}
+        />
+      ) : view === 'learn' ? (
+        <Learn go={setView} />
+      ) : view === 'privacy' ? (
+        <Privacy />
+      ) : (
+        <Home go={setView} />
+      ),
+    [view, reports, selfHost],
+  );
+  const approve = async (report: Draft) => {
+    const live = {
+      ...report,
+      id: `live-${Date.now()}`,
+      status: 'new' as Status,
+      createdDay: new Date().toISOString().slice(0, 10),
+      isSeeded: false,
+    };
+    try {
+      const response = await fetch('/api/reports', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(report),
+      });
+      if (response.ok) {
+        const saved = (await response.json()) as Report;
+        setReports((v) => [saved, ...v]);
+      } else if (!selfHost?.enabled) setReports((v) => [live, ...v]);
+    } catch {
+      if (!selfHost?.enabled) setReports((v) => [live, ...v]);
+    }
+    setDraft(null);
+    setView('dashboard');
+  };
+  if (selfHost?.enabled && !signedIn)
+    return (
+      <SelfHostAccess
+        configured={selfHost.configured}
+        done={() => setSignedIn(true)}
+      />
+    );
+  return (
+    <>
+      <header className="siteNav">
+        <Brand />
+        <nav>
+          {[
+            ['home', 'Overview'],
+            ['venue', 'Demo venue'],
+            ['dashboard', 'Dashboard'],
+            ['learn', 'How it works'],
+          ].map((x) => (
+            <button
+              key={x[0]}
+              className={view === x[0] ? 'on' : ''}
+              onClick={() => setView(x[0])}
+            >
+              {x[1]}
+            </button>
+          ))}
+        </nav>
+        <button className="link" onClick={() => setView('dashboard')}>
+          View {selfHost?.enabled ? 'dashboard' : 'demo dashboard'} →
+        </button>
+      </header>
+      <main>
+        {content}
+        <DeliverySetup />
+      </main>
+      <footer className="siteFooter">
+        <Brand />
+        <span>Privacy-first signals for better websites.</span>
+        <button className="link" onClick={() => setView('privacy')}>
+          Privacy
+        </button>
+      </footer>
+      {draft && (
+        <Drawer draft={draft} close={() => setDraft(null)} approve={approve} />
+      )}
+    </>
+  );
+}
