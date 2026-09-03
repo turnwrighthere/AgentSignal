@@ -1027,7 +1027,24 @@ button {
     margin-top: 12px;
   }
   .metrics {
-    margin: 30px 0;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+    margin: 22px 0;
+  }
+  .metrics article {
+    min-width: 0;
+    padding: 12px 9px;
+  }
+  .metrics span {
+    font-size: 11px;
+    line-height: 1.15;
+  }
+  .metrics strong {
+    margin: 3px 0 0;
+    font-size: 30px;
+  }
+  .metrics small {
+    display: none;
   }
   .reportHead > div:last-child {
     display: grid;
@@ -1039,12 +1056,8 @@ button {
     width: 100%;
     margin-left: 0;
   }
-  .metrics article,
   .report {
     padding: 17px;
-  }
-  .metrics strong {
-    font-size: 40px;
   }
   .report footer {
     display: grid;
