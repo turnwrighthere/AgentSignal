@@ -843,6 +843,56 @@ button {
 .drawer .button {
   box-shadow: none;
 }
+.submission-confirmation {
+  width: min(100% - 40px, 460px);
+  align-self: center;
+  margin: auto;
+  padding: 38px 34px 30px;
+  text-align: center;
+  background: #fffefa;
+  box-shadow: 0 20px 60px #07191a66;
+}
+.submission-confirmation > span {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 18px;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--signal);
+  font-size: 23px;
+  font-weight: 700;
+}
+.submission-confirmation > b {
+  color: var(--signal);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.submission-confirmation h2 {
+  margin: 10px 0;
+  font:
+    500 34px/1.04 Georgia,
+    serif;
+  letter-spacing: -0.04em;
+}
+.submission-confirmation p {
+  margin: 0 auto 24px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.submission-confirmation .button {
+  width: 100%;
+  box-shadow: none;
+}
+.submission-confirmation small {
+  display: block;
+  margin: 18px auto 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
 .x {
   position: absolute;
   right: 17px;
@@ -1029,6 +1079,13 @@ button {
   }
   .drawer h2 {
     font-size: 34px;
+  }
+  .submission-confirmation {
+    width: min(100% - 32px, 460px);
+    padding: 30px 21px 23px;
+  }
+  .submission-confirmation h2 {
+    font-size: 30px;
   }
   .drawer > p {
     font-size: 14px;

@@ -206,6 +206,39 @@ function Drawer({
     </div>
   );
 }
+function SubmissionConfirmation({
+  viewDashboard,
+}: {
+  viewDashboard: () => void;
+}) {
+  return (
+    <div className="shade">
+      <section
+        className="submission-confirmation"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="submission-confirmation-title"
+      >
+        <span aria-hidden="true">✓</span>
+        <b>Report sent</b>
+        <h2 id="submission-confirmation-title">
+          Thanks for improving this website.
+        </h2>
+        <p>
+          The venue owner now has a short, generalized description of what the
+          site needs.
+        </p>
+        <button className="button" onClick={viewDashboard}>
+          View it in the demo dashboard
+        </button>
+        <small>
+          Demo only: this link lets you see the submitted report. On a real
+          website, you would stay on the site after sending.
+        </small>
+      </section>
+    </div>
+  );
+}
 function Home({ go }: { go: (s: string) => void }) {
   return (
     <>
@@ -787,6 +820,8 @@ export default function App() {
   const [view, setView] = useState('home'),
     [reports, setReports] = useState(seeds),
     [draft, setDraft] = useState<Draft | null>(null),
+    [showSubmissionConfirmation, setShowSubmissionConfirmation] =
+      useState(false),
     [selfHost, setSelfHost] = useState<SelfHostConfig | null>(null),
     [signedIn, setSignedIn] = useState(false);
   useEffect(() => {
@@ -899,7 +934,8 @@ export default function App() {
       if (!selfHost?.enabled) setReports((v) => [live, ...v]);
     }
     setDraft(null);
-    setView('dashboard');
+    if (selfHost?.enabled) setView('dashboard');
+    else setShowSubmissionConfirmation(true);
   };
   if (selfHost?.enabled && !signedIn)
     return (
@@ -945,6 +981,14 @@ export default function App() {
       </footer>
       {draft && (
         <Drawer draft={draft} close={() => setDraft(null)} approve={approve} />
+      )}
+      {showSubmissionConfirmation && (
+        <SubmissionConfirmation
+          viewDashboard={() => {
+            setShowSubmissionConfirmation(false);
+            setView('dashboard');
+          }}
+        />
       )}
     </>
   );
